@@ -1,4 +1,4 @@
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, sendEmailVerification, updateProfile } from "firebase/auth";
 import auth from "../../firebase/firebase.config";
 import { useState } from "react";
 
@@ -9,8 +9,12 @@ const Signup = () => {
 
   const handleForm = (e) => {
     e.preventDefault();
+    const name = e.target.name.value;
     const email = e.target.email.value;
     const password = e.target.password.value;
+    const terms = e.target.terms.checked;
+
+    console.log(name, email, password, terms)
 
     setSignupSucces("");
     setSignupError("");
@@ -23,12 +27,29 @@ const Signup = () => {
         "Password must contain at least one upper case charector."
       );
       return;
+    } else if(!terms) {
+      setSignupError(
+        "You must accept our terms!"
+      );
+      return;
     }
 
     createUserWithEmailAndPassword(auth, email, password)
       .then((result) => {
+        updateProfile(result.user, {
+          displayName: name
+        })
+        .then()
+        .catch(error => console.log(error.message))
+
         console.log(result);
         setSignupSucces("User created successfully.");
+
+        sendEmailVerification(result.user)
+        .then(() => {
+          alert("Please verify your email address.")
+        })
+        .catch(error => console.log(error.message))
       })
       .catch((error) => {
         console.log(error, error.message);
@@ -46,6 +67,13 @@ const Signup = () => {
           Sign Up Form
         </legend>
         <div className="space-y-3">
+        <input
+            className="w-full py-2 px-4 rounded border"
+            type="text"
+            name="name"
+            placeholder="Name"
+            required
+          />
           <input
             className="w-full py-2 px-4 rounded border"
             type="email"
@@ -61,6 +89,10 @@ const Signup = () => {
             required
           />
           <span onClick={() => setShowPassword(!showPassword)} className="cursor-pointer font-bold text-sm">Show Password</span>
+          <div>
+            <input type="checkbox" name="terms" id="terms"/>
+            <label htmlFor="terms">Accept terms</label>
+          </div>
           <input
             className="w-full py-2 px-4 rounded border bg-lime-900 text-white cursor-pointer"
             type="submit"
